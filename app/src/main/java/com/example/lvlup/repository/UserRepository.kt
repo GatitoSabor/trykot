@@ -1,33 +1,27 @@
 package com.example.lvlup.repository
 
-import com.example.lvlup.data.AddressEntity
 import com.example.lvlup.data.UserDao
 import com.example.lvlup.data.UserEntity
 
-class UserRepository(private val dao: UserDao) {
-    suspend fun login(email: String, password: String): UserEntity? {
-        val user = dao.getByEmail(email)
-        return if (user?.password == password) user else null
+class UserRepository(private val userDao: UserDao) {
+
+    suspend fun insertUser(user: UserEntity) {
+        userDao.insert(user)
     }
 
-    suspend fun register(user: UserEntity) = dao.insert(user)
-
-    suspend fun getUserById(userId: Int): UserEntity? = dao.getUserById(userId)
-
-    suspend fun updateUser(user: UserEntity) = dao.updateUser(user)
-
-    suspend fun getAddresses(userId: Int): List<AddressEntity> =
-        dao.getAddressesForUser(userId)
-
-    suspend fun addAddress(userId: Int, value: String) {
-        dao.insertAddress(AddressEntity(userId = userId, value = value))
+    suspend fun getUserById(userId: Int): UserEntity? {
+        return userDao.getUserById(userId)
     }
 
-    suspend fun updateAddress(address: AddressEntity) {
-        dao.updateAddress(address)
+    suspend fun updateUser(user: UserEntity) {
+        userDao.update(user)
     }
 
-    suspend fun removeAddress(address: AddressEntity) {
-        dao.deleteAddress(address)
+    // Si tienes lógica de login local antigua, asegúrate de usar 'pass'
+    /*
+    suspend fun loginLocal(email: String, pass: String): UserEntity? {
+        // ⚠️ CORRECCIÓN: Usar el nombre correcto del campo en la entidad
+        return userDao.getUserByEmailAndPassword(email, pass)
     }
+    */
 }

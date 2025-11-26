@@ -7,6 +7,8 @@ interface CouponDao {
     @Insert
     suspend fun insert(coupon: CouponEntity)
 
+    @Query("SELECT * FROM coupons")
+    suspend fun getAllCoupons(): List<CouponEntity>
     @Query("SELECT * FROM coupons WHERE userId = :userId AND isUsed = 0")
     suspend fun getUnusedCoupons(userId: Int): List<CouponEntity>
 

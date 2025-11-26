@@ -1,34 +1,26 @@
 package com.example.lvlup.data
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
+import androidx.room.Update // ⚠️ Importar @Update
 
 @Dao
 interface UserDao {
-    @Insert
-    suspend fun insert(user: UserEntity): Long
-
-    @Query("SELECT * FROM users WHERE email = :email")
-    suspend fun getByEmail(email: String): UserEntity?
-
-    @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
+    @Query("SELECT * FROM users WHERE id = :userId")
     suspend fun getUserById(userId: Int): UserEntity?
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(user: UserEntity)
+
+    // ⚠️ AGREGAR ESTE MÉTODO
     @Update
-    suspend fun updateUser(user: UserEntity)
+    suspend fun update(user: UserEntity)
 
-    @Query("SELECT * FROM addresses WHERE userId = :userId")
-    suspend fun getAddressesForUser(userId: Int): List<AddressEntity>
-
-    @Insert
-    suspend fun insertAddress(address: AddressEntity)
-
-    @Delete
-    suspend fun deleteAddress(address: AddressEntity)
-
-    @Update
-    suspend fun updateAddress(address: AddressEntity)
+    // Si tenías login local, asegúrate que coincida con UserEntity
+    /*
+    @Query("SELECT * FROM users WHERE email = :email AND pass = :password")
+    suspend fun getUserByEmailAndPassword(email: String, password: String): UserEntity?
+    */
 }

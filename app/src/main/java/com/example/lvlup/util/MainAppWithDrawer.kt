@@ -1,7 +1,8 @@
 package com.example.lvlup.util
 
 import ProductListViewModel
-import ProfileViewModel
+import com.example.lvlup.ui.micuenta.ProfileViewModel
+
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -42,7 +43,7 @@ import com.example.lvlup.ui.home.InicioScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.room.Room
 import com.example.lvlup.data.AppDatabase
-
+import com.example.lvlup.data.ProductoDto // ⚠️ IMPORTAR EL NUEVO DTO
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +61,7 @@ fun MainAppWithDrawer(
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
     val uriHandler = LocalUriHandler.current
+    // productsFlow ahora emite List<ProductoDto>
     val productosEnOferta by productListVM.productsFlow.collectAsState(initial = emptyList())
 
     val showDrawer = currentRoute != "login" && currentRoute != "register"
@@ -234,7 +236,8 @@ fun AppNavHost(
     cartVM: CartViewModel,
     puntosVM: PuntosViewModel,
     miCuentaVM: ProfileViewModel,
-    productosEnOferta: List<com.example.lvlup.data.ProductEntity>,
+    // ⚠️ CAMBIO 1: Actualizar el tipo de dato a ProductoDto
+    productosEnOferta: List<ProductoDto>,
     usuarioIdGuardado: Int,
     modifier: Modifier = Modifier
 ) {
@@ -247,7 +250,8 @@ fun AppNavHost(
     ) {
         composable("inicio") {
             InicioScreen(
-                productosEnOferta = productosEnOferta.filter { (it.discountPercent ?: 0.0) > 0.0 },
+                // ⚠️ CAMBIO 2: Actualizar la lógica de filtrado para usar 'descuento' (el nombre del campo en el DTO)
+                productosEnOferta = productosEnOferta.filter { it.descuento > 0.0 },
                 onGoCatalogo = { navController.navigate("home") },
                 onGoComunidad = { navController.navigate("comunidad") }
             )
@@ -293,11 +297,7 @@ fun AppNavHost(
             )
         }
         composable("micuenta") {
-            MiCuentaScreen(
-                viewModel = miCuentaVM,
-                usuarioId = loginVM.usuarioActivo?.id,
-                onBack = { navController.popBackStack() }
-            )
+            MiCuentaScreen(miCuentaVM)
         }
         composable("contacto") {
             ContactoScreen(
@@ -305,16 +305,10 @@ fun AppNavHost(
             )
         }
         composable("adminproductos") {
-            val context = LocalContext.current.applicationContext
-            val db = remember {
-                Room.databaseBuilder(
-                    context,
-                    AppDatabase::class.java,
-                    "lvlup_db"
-                ).fallbackToDestructiveMigration().build()
-            }
-            val adminVM = remember { AdminProductosViewModel(db.productDao()) }
-            AdminProductosScreen(adminVM)
+            // ⚠️ CORRECCIÓN: Eliminar la lógica manual de inicialización de Room/ViewModel.
+            // La pantalla AdminProductosScreen ahora se encarga de inyectar su propio ViewModel
+            // usando el Factory, que resuelve todas las dependencias (DAO y API).
+            AdminProductosScreen()
         }
     }
 }

@@ -12,12 +12,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.lvlup.data.ProductEntity
+// ⚠️ CAMBIO 1: Importar ProductoDto
+import com.example.lvlup.data.ProductoDto
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun InicioScreen(
-    productosEnOferta: List<ProductEntity>,
+    // ⚠️ CAMBIO 2: Cambiar el tipo de parámetro
+    productosEnOferta: List<ProductoDto>,
     onGoCatalogo: () -> Unit,
     onGoComunidad: () -> Unit
 ) {
@@ -60,20 +62,24 @@ fun InicioScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(8.dp)
                             ) {
-                                if (!producto.imageUrl.isNullOrBlank()) {
+                                // ⚠️ CAMBIO 3: Usar 'imagen' en lugar de 'imageUrl'
+                                if (!producto.imagen.isNullOrBlank()) {
                                     Image(
-                                        painter = rememberAsyncImagePainter(producto.imageUrl),
-                                        contentDescription = producto.name,
+                                        painter = rememberAsyncImagePainter(producto.imagen),
+                                        // ⚠️ CAMBIO 4: Usar 'nombre' en lugar de 'name'
+                                        contentDescription = producto.nombre,
                                         modifier = Modifier
                                             .size(48.dp)
                                             .padding(end = 10.dp)
                                     )
                                 }
                                 Column(Modifier.weight(1f)) {
-                                    Text(producto.name, style = MaterialTheme.typography.bodyLarge)
+                                    // ⚠️ CAMBIO 5: Usar 'nombre' en lugar de 'name'
+                                    Text(producto.nombre, style = MaterialTheme.typography.bodyLarge)
                                     Text("Oferta especial", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                                     Text(
-                                        "${producto.discountPercent?.toInt() ?: 0}% OFF",
+                                        // ⚠️ CAMBIO 6: Usar 'descuento' en lugar de 'discountPercent'
+                                        "${producto.descuento.toInt()}% OFF",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF388E3C)
                                     )

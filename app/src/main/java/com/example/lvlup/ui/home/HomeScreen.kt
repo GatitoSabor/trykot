@@ -13,7 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import coil.compose.rememberAsyncImagePainter
-import com.example.lvlup.data.ProductEntity
+// ⚠️ CAMBIO 1: Importar ProductoDto (el tipo de dato que viene del backend)
+import com.example.lvlup.data.ProductoDto
+// ⚠️ CAMBIO 2: Importar la función de mapeo
+import com.example.lvlup.data.toProductEntity
 import com.example.lvlup.ui.cart.CartViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -31,10 +34,12 @@ fun HomeScreen(
     goToCart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var productoSeleccionado by remember { mutableStateOf<ProductEntity?>(null) }
+    // ⚠️ CAMBIO 3: Cambiar ProductEntity a ProductoDto
+    var productoSeleccionado by remember { mutableStateOf<ProductoDto?>(null) }
     var soloOfertas by remember { mutableStateOf(false) }
 
-    var categoriaSeleccionada by remember { mutableStateOf("Todas") }
+    // ⚠️ CORRECCIÓN CLAVE: Usar la delegación de propiedad (::) para vincular el estado local al ViewModel
+    var categoriaSeleccionada by productListViewModel::category
     var expandedCategoria by remember { mutableStateOf(false) }
 
     var marcaSeleccionada by remember { mutableStateOf("Todas") }
@@ -42,8 +47,9 @@ fun HomeScreen(
 
     val products by productListViewModel.productsFlow.collectAsState(initial = emptyList())
 
-    val categories = remember(products) { listOf("Todas") + products.map { it.category }.distinct() }
-    val marcas = remember(products) { listOf("Todas") + products.map { it.brand }.distinct() }
+    // ⚠️ CAMBIO 4: Usar propiedades del DTO (categoria, marca)
+    val categories = remember(products) { listOf("Todas") + products.map { it.categoria }.distinct() }
+    val marcas = remember(products) { listOf("Todas") + products.map { it.marca }.distinct() }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = modifier) {
         Box(
@@ -183,9 +189,11 @@ fun HomeScreen(
                             .fillMaxSize()
                     ) {
                         items(products
-                            .filter { categoriaSeleccionada == "Todas" || it.category == categoriaSeleccionada }
-                            .filter { marcaSeleccionada == "Todas" || it.brand == marcaSeleccionada }
-                            .filter { !soloOfertas || (it.discountPercent != null && it.discountPercent > 0) }
+                            // ⚠️ CAMBIO 5: Usar propiedades del DTO (categoria, marca, descuento)
+                            .filter { categoriaSeleccionada == "Todas" || it.categoria == categoriaSeleccionada }
+                            .filter { marcaSeleccionada == "Todas" || it.marca == marcaSeleccionada }
+                            // El campo descuento en el DTO es un double no nullable, se simplifica la comprobación
+                            .filter { !soloOfertas || (it.descuento > 0) }
                         ) { prod ->
                             Card(
                                 modifier = Modifier
@@ -200,34 +208,37 @@ fun HomeScreen(
                                         .fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    if (!prod.imageUrl.isNullOrBlank()) {
+                                    // ⚠️ CAMBIO 6: Usar propiedad imagen
+                                    if (!prod.imagen.isNullOrBlank()) {
                                         Image(
-                                            painter = rememberAsyncImagePainter(prod.imageUrl),
-                                            contentDescription = prod.name,
+                                            painter = rememberAsyncImagePainter(prod.imagen),
+                                            contentDescription = prod.nombre, // ⚠️ CAMBIO 7: Usar propiedad nombre
                                             modifier = Modifier
                                                 .size(72.dp)
                                                 .padding(end = 12.dp)
                                                 .clickable { productoSeleccionado = prod }
                                         )
                                     }
-                                    val tieneDescuento = prod.discountPercent != null && prod.discountPercent > 0
+                                    // ⚠️ CAMBIO 8: Usar propiedad descuento y precio
+                                    val tieneDescuento = prod.descuento > 0
                                     val precioFinal = if (tieneDescuento)
-                                        prod.price * (1 - (prod.discountPercent!! / 100))
+                                    // prod.descuento es un Double, sin necesidad de !! o casteos complejos
+                                        prod.precio * (1 - (prod.descuento / 100))
                                     else
-                                        prod.price
+                                        prod.precio
 
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(prod.name, style = MaterialTheme.typography.titleLarge)
-                                        Text("Marca: ${prod.brand}", style = MaterialTheme.typography.bodyMedium)
+                                        Text(prod.nombre, style = MaterialTheme.typography.titleLarge) // ⚠️ CAMBIO 9: Usar nombre
+                                        Text("Marca: ${prod.marca}", style = MaterialTheme.typography.bodyMedium) // ⚠️ CAMBIO 10: Usar marca
                                         if (tieneDescuento) {
                                             Text(
-                                                "Precio original: $${prod.price}",
+                                                "Precio original: $${prod.precio}", // ⚠️ CAMBIO 11: Usar precio
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.error,
                                                 modifier = Modifier.padding(bottom = 2.dp)
                                             )
                                             Text(
-                                                "Descuento: ${prod.discountPercent?.toInt()}%",
+                                                "Descuento: ${prod.descuento.toInt()}%",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
@@ -237,11 +248,13 @@ fun HomeScreen(
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                         } else {
-                                            Text("${prod.category} - $${prod.price}", style = MaterialTheme.typography.bodyMedium)
+                                            Text("${prod.categoria} - $${prod.precio}", style = MaterialTheme.typography.bodyMedium) // ⚠️ CAMBIO 12: Usar categoria y precio
                                         }
-                                        Text(prod.description, style = MaterialTheme.typography.bodySmall)
+                                        Text(prod.descripcion, style = MaterialTheme.typography.bodySmall) // ⚠️ CAMBIO 13: Usar descripcion
                                     }
-                                    Button(onClick = { cartViewModel.addToCart(prod) }) {
+
+                                    // ⚠️ CAMBIO 14: Usar el mapeador antes de añadir al carrito
+                                    Button(onClick = { cartViewModel.addToCart(prod.toProductEntity()) }) {
                                         Text("Agregar")
                                     }
                                 }
@@ -252,19 +265,20 @@ fun HomeScreen(
                     if (productoSeleccionado != null) {
                         AlertDialog(
                             onDismissRequest = { productoSeleccionado = null },
-                            title = { Text(productoSeleccionado!!.name) },
+                            title = { Text(productoSeleccionado!!.nombre) }, // ⚠️ CAMBIO 15: Usar nombre
                             text = {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    if (!productoSeleccionado!!.imageUrl.isNullOrBlank()) {
+                                    // ⚠️ CAMBIO 16: Usar propiedad imagen
+                                    if (!productoSeleccionado!!.imagen.isNullOrBlank()) {
                                         Image(
-                                            painter = rememberAsyncImagePainter(productoSeleccionado!!.imageUrl),
-                                            contentDescription = productoSeleccionado!!.name,
+                                            painter = rememberAsyncImagePainter(productoSeleccionado!!.imagen),
+                                            contentDescription = productoSeleccionado!!.nombre, // ⚠️ CAMBIO 17: Usar nombre
                                             modifier = Modifier.size(120.dp)
                                         )
                                     }
                                     Spacer(Modifier.height(8.dp))
-                                    Text(productoSeleccionado!!.description)
-                                    Text("Marca: ${productoSeleccionado!!.brand}", style = MaterialTheme.typography.bodyMedium)
+                                    Text(productoSeleccionado!!.descripcion) // ⚠️ CAMBIO 18: Usar descripcion
+                                    Text("Marca: ${productoSeleccionado!!.marca}", style = MaterialTheme.typography.bodyMedium) // ⚠️ CAMBIO 19: Usar marca
                                 }
                             },
                             confirmButton = {

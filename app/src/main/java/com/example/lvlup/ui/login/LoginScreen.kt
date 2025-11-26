@@ -1,112 +1,96 @@
 package com.example.lvlup.ui.login
 
-import android.content.Context
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    onLoginSuccess: (userId: Int) -> Unit,
+    onLoginSuccess: (Int) -> Unit, // El ID suele ser Int en la navegación de Android
     onRegister: () -> Unit
 ) {
-    val loginError = viewModel.loginError
-    var isLoggingIn by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    // No necesitamos estados locales aquí, usamos los del ViewModel
+    val email = viewModel.email
+    val password = viewModel.password
+    val isLoading = viewModel.isLoading
+    val errorMensaje = viewModel.errorMensaje // Usar la propiedad correcta
 
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(24.dp)
         ) {
-            Surface(
-                color = Color.White,
-                shape = MaterialTheme.shapes.medium,
-                shadowElevation = 8.dp,
-                modifier = Modifier
-                    .padding(horizontal = 32.dp)
-                    .fillMaxWidth(0.90f)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+            Text(
+                "Iniciar Sesión",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { viewModel.onEmailChange(it) }, // Usar la función del VM
+                label = { Text("Correo Electrónico") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { viewModel.onPasswordChange(it) }, // Usar la función del VM
+                label = { Text("Contraseña") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation()
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else {
+                Button(
+                    onClick = {
+                        // Llamar a login y convertir el Long a Int para la navegación
+                        viewModel.login { userIdLong ->
+                            onLoginSuccess(userIdLong.toInt())
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = email.isNotBlank() && password.isNotBlank()
                 ) {
-                    Text(
-                        "Bienvenido a LevelUp",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = Color.Black,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = viewModel.email,
-                        onValueChange = { viewModel.email = it },
-                        label = { Text("Email", color = Color.Black) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = viewModel.password,
-                        onValueChange = { viewModel.password = it },
-                        label = { Text("Password", color = Color.Black) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation()
-                    )
-
-                    if (loginError != null) {
-                        Text(
-                            text = loginError,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-
-                    Button(
-                        onClick = {
-                            isLoggingIn = true
-                            viewModel.login { usuario ->
-                                isLoggingIn = false
-                                if (usuario != null) {
-                                    guardarSesionUsuario(context, usuario.id)
-                                    onLoginSuccess(usuario.id)
-                                }
-                            }
-                        },
-                        enabled = !isLoggingIn,
-                        modifier = Modifier
-                            .padding(top = 20.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Text(if (isLoggingIn) "Cargando..." else "Ingresar")
-                    }
-                    TextButton(
-                        onClick = onRegister,
-                        modifier = Modifier.padding(top = 10.dp)
-                    ) {
-                        Text("¿No tienes cuenta? Regístrate", color = MaterialTheme.colorScheme.primary)
-                    }
+                    Text("Ingresar")
                 }
+
+                Spacer(Modifier.height(12.dp))
+
+                TextButton(onClick = onRegister) {
+                    Text("¿No tienes cuenta? Regístrate")
+                }
+            }
+
+            // Mostrar mensaje de error si existe
+            if (errorMensaje != null) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = errorMensaje,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
-}
-
-fun guardarSesionUsuario(context: Context, userId: Int) {
-    val prefs = context.getSharedPreferences("lvlup_prefs", Context.MODE_PRIVATE)
-    prefs.edit().putInt("usuario_id", userId).apply()
 }
